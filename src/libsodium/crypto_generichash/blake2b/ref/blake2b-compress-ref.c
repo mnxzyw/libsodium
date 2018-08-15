@@ -34,12 +34,12 @@ blake2b_compress_ref(blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES])
     uint64_t v[16];
     int      i;
 
-    for (i   = 0; i < 16; ++i)
+    for (i = 0; i < 16; ++i) {
         m[i] = LOAD64_LE(block + i * sizeof(m[i]));
-
-    for (i   = 0; i < 8; ++i)
+    }
+    for (i = 0; i < 8; ++i) {
         v[i] = S->h[i];
-
+    }
     v[8]  = blake2b_IV[0];
     v[9]  = blake2b_IV[1];
     v[10] = blake2b_IV[2];
@@ -83,8 +83,9 @@ blake2b_compress_ref(blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES])
     ROUND(10);
     ROUND(11);
 
-    for (i      = 0; i < 8; ++i)
+    for (i = 0; i < 8; ++i) {
         S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
+    }
 
 #undef G
 #undef ROUND

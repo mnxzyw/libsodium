@@ -19,6 +19,7 @@ typedef struct CPUFeatures_ {
     int has_avx512f;
     int has_pclmul;
     int has_aesni;
+    int has_rdrand;
 } CPUFeatures;
 
 static CPUFeatures _cpu_features;
@@ -34,6 +35,7 @@ static CPUFeatures _cpu_features;
 #define CPUID_ECX_XSAVE   0x04000000
 #define CPUID_ECX_OSXSAVE 0x08000000
 #define CPUID_ECX_AVX     0x10000000
+#define CPUID_ECX_RDRAND  0x40000000
 
 #define CPUID_EDX_SSE2    0x04000000
 
@@ -151,10 +153,21 @@ _sodium_runtime_intel_cpu_features(CPUFeatures * const cpu_features)
         (defined(_MSC_VER) && defined(_XCR_XFEATURE_ENABLED_MASK) && _MSC_FULL_VER >= 160040219)
         xcr0 = (uint32_t) _xgetbv(0);
 # elif defined(_MSC_VER) && defined(_M_IX86)
+        /*
+         * Visual Studio documentation states that eax/ecx/edx don't need to
+         * be preserved in inline assembly code. But that doesn't seem to
+         * always hold true on Visual Studio 2010.
+         */
         __asm {
+            push eax
+            push ecx
+            push edx
             xor ecx, ecx
             _asm _emit 0x0f _asm _emit 0x01 _asm _emit 0xd0
             mov xcr0, eax
+            pop edx
+            pop ecx
+            pop eax
         }
 # elif defined(HAVE_AVX_ASM)
         __asm__ __volatile__(".byte 0x0f, 0x01, 0xd0" /* XGETBV */
@@ -194,6 +207,12 @@ _sodium_runtime_intel_cpu_features(CPUFeatures * const cpu_features)
 #else
     cpu_features->has_pclmul = 0;
     cpu_features->has_aesni  = 0;
+#endif
+
+#ifdef HAVE_RDRAND
+    cpu_features->has_rdrand = ((cpu_info[2] & CPUID_ECX_RDRAND) != 0x0);
+#else
+    cpu_features->has_rdrand = 0;
 #endif
 
     return 0;
@@ -269,4 +288,10 @@ int
 sodium_runtime_has_aesni(void)
 {
     return _cpu_features.has_aesni;
+}
+
+int
+sodium_runtime_has_rdrand(void)
+{
+    return _cpu_features.has_rdrand;
 }

@@ -3,11 +3,7 @@
    and 128 bit addition
 */
 
-#if defined(__SIZEOF_INT128__)
-typedef unsigned __int128 uint128_t;
-#else
-typedef unsigned uint128_t __attribute__((mode(TI)));
-#endif
+#include "private/common.h"
 
 #define MUL(out, x, y) out = ((uint128_t) x * y)
 #define ADD(out, in) out += in
@@ -17,13 +13,11 @@ typedef unsigned uint128_t __attribute__((mode(TI)));
 
 #if defined(_MSC_VER)
 # define POLY1305_NOINLINE __declspec(noinline)
-#elif defined(__GNUC__)
+#elif defined(__clang__) || defined(__GNUC__)
 # define POLY1305_NOINLINE __attribute__((noinline))
 #else
 # define POLY1305_NOINLINE
 #endif
-
-#include "private/common.h"
 
 #define poly1305_block_size 16
 
